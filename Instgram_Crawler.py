@@ -54,15 +54,19 @@ def content_type(HTML):
 
 def findVideoUrl(HTML):
     html = HTML
-    videore_raw = r'"video_url": "(https://scontent-sin6-2\.cdninstagram\.com/t50\.2886-16/.*_n\.mp4)",'
+    videore_raw = r'"video_url": "(https://scontent-sin6-2\.cdninstagram\.com/t50\.2886-16/\d*_\d*_\d*_n\.mp4)",'
     videore = re.compile(videore_raw)
     videotag = re.findall(videore, html)
     # print(videotag)
-
-    if videotag:
+    videonum = len(videotag)
+    if videonum == 1:
         videoUrl = videotag[0]
         print(videoUrl)
         return videoUrl
+    elif videonum > 1:
+        videoUrllist = videotag
+        print(videoUrllist)
+        return videoUrllist
     else:
         print('The Video url seems disappear...')
         return False
@@ -108,7 +112,7 @@ def getPostname(posturl):
     postnameRe = re.compile(reg)
     postnames = re.findall(postnameRe, posturl)
     if postnames:
-        # print(postnames[0])
+        print(postnames[0])
         return postnames[0]
     else:
         print('Lost postname...')
@@ -181,7 +185,15 @@ def DownloadContent(url):
     if ContentType == Video:
         VideoUrl = findVideoUrl(HTML)
         VideoName = getPostname(url)
-        DownloadVideo(VideoUrl, VideoName)
+
+        if not isinstance(VideoUrl, list):
+            DownloadVideo(VideoUrl, VideoName)
+        else:
+            VideoNumber = len(VideoUrl)
+            print("There are %d videos in this post" % VideoNumber)
+            for count in range(VideoNumber):
+                videoname = VideoName + '_%d' % count
+                DownloadVideo(VideoUrl[count], videoname)
         return VideoUrl
     elif ContentType == Image_single:
         ImageUrl = findImageUrl_Single(HTML)
@@ -239,7 +251,8 @@ if __name__ == '__main__':
 
     # url1_multi = 'https://www.instagram.com/p/BXZyl4GBhXy/'
     # url_video = 'https://www.instagram.com/p/BXMc-NXhwaL/'
-    # url_video1 = 'https://www.instagram.com/p/BXPI0yfAHBz/?taken-by=xiamei0828'
+    # url_video1 = 'https://www.instagram.com/p/BXPI0yfAHBz/'
+    # url_videoset = 'https://www.instagram.com/p/BXcvKDwB30E/'
     # url2_single = 'https://www.instagram.com/p/BXbuLwlFL7Q/'
     # url3_single = 'https://www.instagram.com/p/BXUSWaYgc_y/'
     # url4_multi = 'https://www.instagram.com/p/BXaI4Dkhhv5/'
@@ -247,3 +260,6 @@ if __name__ == '__main__':
     
     # ContentUrl = CallbackAPI_URL(url1_multi)
     # print(ContentUrl)
+    # HTML = getHtml(url_videoset)
+    # Videourl = findVideoUrl(HTML)
+    # DownloadContent(url_videoset)
