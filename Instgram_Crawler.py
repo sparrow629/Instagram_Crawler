@@ -10,6 +10,7 @@ import os
 import traceback
 from urllib.parse import quote
 from bs4 import BeautifulSoup
+import sys
 
 Video = 'GraphVideo'
 Image_single = 'GraphImage'
@@ -54,7 +55,7 @@ def content_type(HTML):
 
 def findVideoUrl(HTML):
     html = HTML
-    videore_raw = r'"video_url": "(https://scontent-sin6-2\.cdninstagram\.com/t50\.2886-16/\d*_\d*_\d*_n\.mp4)",'
+    videore_raw = r'"video_url": "(https://.*?\.com/t50\.2886-16/\d*_\d*_\d*_n\.mp4)",'
     videore = re.compile(videore_raw)
     videotag = re.findall(videore, html)
     # print(videotag)
@@ -74,7 +75,8 @@ def findVideoUrl(HTML):
 
 def findImageUrl_Single(HTML):
     html = HTML
-    displayre = r'"display_url": "(https://scontent-sin6-2\.cdninstagram\.com/t51\.2885-15/e35/.*_n\.jpg)", "display_resources": \[\], "is_video": false,'
+    # displayre = r'"display_url": "(https://scontent-.*-.*\.cdninstagram\.com/t51\.2885-15/e35/.*_n\.jpg)", "display_resources": \[\], "is_video": false,'
+    displayre = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
     imgurltagre = re.compile(displayre)
     imageurltag = re.findall(imgurltagre, html)
     # print(displayre,imageurltag)
@@ -93,7 +95,8 @@ def findImageUrl_Set(HTML):
     imgurllistre = re.compile(displayre)
     imageurllist_raw = re.findall(imgurllistre, html)
     if imageurllist_raw:
-        imglistre_exp = r'"display_url": "(https://scontent-sin6-2\.cdninstagram\.com/t51\.2885-15/e35/\d*_\d*_\d*_n\.jpg)'
+        # imglistre_exp = r'"display_url": "(https://scontent-.*?\d-\d\.cdninstagram\.com/t51\.2885-15/e35/\d*_\d*_\d*_n\.jpg)'
+        imglistre_exp = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
         imglistre = re.compile(imglistre_exp)
         imageurllists = re.findall(imglistre, imageurllist_raw[0])
         # print(imglistre, imageurllist_raw[0], '\n\n', imageurllists)
@@ -176,7 +179,8 @@ def progress_report(blocknum, blocksize, totalsize):
     percent = 100.0 * blocknum * blocksize / totalsize
     if percent >= 100:
         percent = 100.0
-    print("Downloading block %d, %d/%d, ===> %.2f%%" % (blocknum, blocknum*blocksize, totalsize, percent))
+    sys.stdout.write("\r" + "Downloading block %d, %d/%d, ===> %.2f%%" % (blocknum, blocknum*blocksize, totalsize, percent))
+    sys.stdout.flush()
 
 def DownloadContent(url):
     HTML = getHtml(url)
@@ -244,7 +248,7 @@ def main():
         else:
             print("The url seems not to be a post... Please input again!")
 
-        select = input("Do you want to Quit? [Y/N]")
+        select = input("\nDo you want to Quit? [Y/N]")
 
 if __name__ == '__main__':
     main()
