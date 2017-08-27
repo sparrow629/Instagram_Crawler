@@ -15,6 +15,7 @@ import sys
 Video = 'GraphVideo'
 Image_single = 'GraphImage'
 Image_set = 'GraphSidecar'
+Type_Mixed = [Video, Image_set]
 
 def getHtml(url):
     url = quote(url, safe="/:?=")
@@ -24,31 +25,45 @@ def getHtml(url):
         # print(html)
         return html
     except:
-        traceback.print_exc()
+        # traceback.print_exc()
         print('The URL you requested could not be found.')
         return 'Html'
 
 def content_type(HTML):
     html = HTML
-    isVideore_exp = r'"is_video": true'
-    isVideore = re.compile(isVideore_exp)
-    isVideotag = re.findall(isVideore, html)
+    TypeNamere_exp = r'"__typename": "(GraphImage|GraphSidecar|GraphVideo)"'
+    TypeNamere = re.compile(TypeNamere_exp)
+    TypeNametags = re.findall(TypeNamere, html)
+    # print(TypeNametags)
 
-    if isVideotag:
-        print("Content is video!")
-        typename = Video
+    if TypeNametags:
+        if TypeNametags[0] == Video:
+            print("Content is a single video!")
+            typename = Video
 
-    else:
-        isImageSinglere_exp = r'\{"PostPage": \[\{"graphql": \{"shortcode_media": \{"__typename": "GraphImage"'
-        isImageSinglere = re.compile(isImageSinglere_exp)
-        isImageSingle = re.findall(isImageSinglere, HTML)
-
-        if isImageSingle:
+        elif TypeNametags[0] == Image_single:
             print("Content is just a single Image!")
             typename = Image_single
         else:
-            print("Contents are a set of Images!")
-            typename = Image_set
+            TypeNametag = list(set(TypeNametags))
+            TypeNametag.remove('GraphSidecar')
+            # print(TypeNametag)
+            mix = len(TypeNametag)
+            if mix == 1:
+                if TypeNametags[0] == Video:
+                    print("Content is a set of videos!")
+                    typename = Video
+
+                elif TypeNametags[0] == Image_set:
+                    print("Content is a set of Images!")
+                    typename = Image_set
+            else:
+                print("Contents are a set of contents including video and image!")
+                typename = Type_Mixed
+
+    else:
+        print("No Contents")
+        typename = None
 
     return typename
 
@@ -61,7 +76,7 @@ def findVideoUrl(HTML):
     # print(videotag)
     videonum = len(videotag)
     if videonum == 1:
-        videoUrl = videotag[0]
+        videoUrl = videotag
         print(videoUrl)
         return videoUrl
     elif videonum > 1:
@@ -82,7 +97,7 @@ def findImageUrl_Single(HTML):
     # print(displayre,imageurltag)
 
     if imageurltag:
-        imageUrl = imageurltag[0]
+        imageUrl = imageurltag
         print(imageUrl)
         return imageUrl
     else:
@@ -91,23 +106,17 @@ def findImageUrl_Single(HTML):
 
 def findImageUrl_Set(HTML):
     html = HTML
-    displayre = r'"display_url": "(https://.*_n\.jpg)", "display_resources": \[\], "is_video": false,'
+    displayre = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
     imgurllistre = re.compile(displayre)
-    imageurllist_raw = re.findall(imgurllistre, html)
-    if imageurllist_raw:
-        # imglistre_exp = r'"display_url": "(https://scontent-.*?\d-\d\.cdninstagram\.com/t51\.2885-15/e35/\d*_\d*_\d*_n\.jpg)'
-        imglistre_exp = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
-        imglistre = re.compile(imglistre_exp)
-        imageurllists = re.findall(imglistre, imageurllist_raw[0])
-        # print(imglistre, imageurllist_raw[0], '\n\n', imageurllists)
+    imageurllists = re.findall(imgurllistre, html)
 
-        if imageurllists :
-            imageurllist = list(set(imageurllists))
-            print(imageurllist)
-            return imageurllist
-        else:
-            print('The set of image urls seems disappear...')
-            return False
+    if imageurllists :
+        imageurllist = list(set(imageurllists))
+        print(imageurllist)
+        return imageurllist
+    else:
+        print('The set of image urls seems disappear...')
+        return False
 
 
 def getPostname(posturl):
@@ -139,7 +148,7 @@ def DownloadVideo(videourl, postname):
             print("The Video seems disappear...")
 
 def DownloadImage_Single(imageurl, postname):
-    ImgUrl = imageurl
+    ImgUrl = imageurl[0]
     ImgName = postname
 
     if ImgUrl and ImgName:
@@ -167,7 +176,7 @@ def DownloadImage_set(imageurllist, postname):
         for imageurl in ImageUrlList:
             count += 1
             target = path + '%s_%d.jpg' % (PostName, count)
-            print("Downloading %s \n" % target)
+            print("\n\nDownloading %s \n" % target)
             try:
                 urllib.request.urlretrieve(imageurl, target, progress_report)
             except:
@@ -189,26 +198,46 @@ def DownloadContent(url):
     if ContentType == Video:
         VideoUrl = findVideoUrl(HTML)
         VideoName = getPostname(url)
+        VideoNumber = len(VideoUrl)
 
-        if not isinstance(VideoUrl, list):
-            DownloadVideo(VideoUrl, VideoName)
+        if VideoNumber == 1:
+            DownloadVideo(VideoUrl[0], VideoName)
         else:
-            VideoNumber = len(VideoUrl)
             print("There are %d videos in this post" % VideoNumber)
             for count in range(VideoNumber):
                 videoname = VideoName + '_%d' % count
                 DownloadVideo(VideoUrl[count], videoname)
-        return VideoUrl
+
     elif ContentType == Image_single:
         ImageUrl = findImageUrl_Single(HTML)
         ImageName = getPostname(url)
         DownloadImage_Single(ImageUrl, ImageName)
-        return ImageUrl
-    else:
+
+    elif ContentType == Image_set:
         ImageUrlList = findImageUrl_Set(HTML)
         PostName = getPostname(url)
         DownloadImage_set(ImageUrlList, PostName)
-        return ImageUrlList
+
+    elif ContentType == Type_Mixed:
+        VideoUrl = findVideoUrl(HTML)
+        VideoName = getPostname(url)
+        VideoNumber = len(VideoUrl)
+
+        if VideoNumber == 1:
+            DownloadVideo(VideoUrl[0], VideoName)
+        else:
+            print("There are %d videos in this post" % VideoNumber)
+            for count in range(VideoNumber):
+                videoname = VideoName + '_%d' % count
+                DownloadVideo(VideoUrl[count], videoname)
+
+        print("\nFinishing download video, then download images")
+        ImageUrlList = findImageUrl_Set(HTML)
+        DownloadImage_set(ImageUrlList, VideoName)
+
+    else:
+        print("It seems no content or to ba a post of private account which cannot be downloaded without login! ")
+
 
 def CallbackAPI_URL(url):
     HTML = getHtml(url)
@@ -216,20 +245,29 @@ def CallbackAPI_URL(url):
 
     if ContentType == Video:
         VideoUrl = findVideoUrl(HTML)
-        return VideoUrl
-
+        result =  VideoUrl
     elif ContentType == Image_single:
         ImageUrl = findImageUrl_Single(HTML)
-        return ImageUrl
-    else:
+        result = ImageUrl
+    elif ContentType == Image_set:
         ImageUrlList = findImageUrl_Set(HTML)
-        return ImageUrlList
+        result = ImageUrlList
+    elif ContentType == Type_Mixed:
+        result = []
+        VideoUrl = findVideoUrl(HTML)
+        result += VideoUrl
+        ImageUrlList = findImageUrl_Set(HTML)
+        result += ImageUrlList
+    else:
+        result = None
+    print(result)
+    return result
 
 
 def main():
     print('''
                     ---------------------------------
-                       Welcome to Instgram Crawler!
+                       Welcome to Instagram Crawler!
                     ---------------------------------
                     Author:  Sparrow
                     Purpose: downloading images and videos from any Tumblr once.
@@ -245,6 +283,7 @@ def main():
         URL = input('Input url: ')
         if re.match(post_reg, URL):
             DownloadContent(URL)
+            # CallbackAPI_URL(URL)
         else:
             print("The url seems not to be a post... Please input again!")
 
@@ -252,18 +291,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # url1_multi = 'https://www.instagram.com/p/BXZyl4GBhXy/'
-    # url_video = 'https://www.instagram.com/p/BXMc-NXhwaL/'
-    # url_video1 = 'https://www.instagram.com/p/BXPI0yfAHBz/'
-    # url_videoset = 'https://www.instagram.com/p/BXcvKDwB30E/'
-    # url2_single = 'https://www.instagram.com/p/BXbuLwlFL7Q/'
-    # url3_single = 'https://www.instagram.com/p/BXUSWaYgc_y/'
-    # url4_multi = 'https://www.instagram.com/p/BXaI4Dkhhv5/'
-    # url5_multi = 'https://www.instagram.com/p/BW8-SvFBqge/?taken-by=ssovely1024'
-    
-    # ContentUrl = CallbackAPI_URL(url1_multi)
-    # print(ContentUrl)
-    # HTML = getHtml(url_videoset)
-    # Videourl = findVideoUrl(HTML)
-    # DownloadContent(url_videoset)
