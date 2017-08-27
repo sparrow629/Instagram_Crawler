@@ -90,7 +90,6 @@ def findVideoUrl(HTML):
 
 def findImageUrl_Single(HTML):
     html = HTML
-    # displayre = r'"display_url": "(https://scontent-.*-.*\.cdninstagram\.com/t51\.2885-15/e35/.*_n\.jpg)", "display_resources": \[\], "is_video": false,'
     displayre = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
     imgurltagre = re.compile(displayre)
     imageurltag = re.findall(imgurltagre, html)
@@ -272,7 +271,7 @@ def main():
                     Author:  Sparrow
                     Purpose: downloading images and videos from any Tumblr once.
                     Created: 2017.08.06
-                    Version: 1.6
+                    Version: 4.0
                     Manual: https://github.com/sparrow629/Instagram_Crawler
                     署名-非商业使用-禁止演绎 (by-nc-nd)：
                     ''')
