@@ -11,27 +11,47 @@ import traceback
 from urllib.parse import quote
 from bs4 import BeautifulSoup
 import sys
+import ssl
+import requests
 
 Video = 'GraphVideo'
 Image_single = 'GraphImage'
 Image_set = 'GraphSidecar'
 Type_Mixed = [Video, Image_set]
 
+# with open('proxies.json','r') as f:           #将代理读取进列表
+#     proxy_pool = f.readlines()
+# proxies=json.loads(random.choice(proxy_pool))    #随机选取一个代理
+proxies = ""
+headers={'Referer':'https://www.instagram.com/',"User-Agent":"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"}
+
+def get_text(url,cont = False,proxies=proxies):            #获取网页的text或者content
+    r = requests.get(url,headers=headers,proxies=proxies)
+    r.encoding = 'utf-8'
+    if cont == True:
+        h = r.content
+    else:
+        h = r.text
+    return h
+
+
 def getHtml(url):
+    # context = ssl._create_unverified_context()
     url = quote(url, safe="/:?=")
     try:
+        print(url)
         page = urllib.request.urlopen(url)
         html = page.read().decode('utf-8')
         # print(html)
         return html
     except:
-        # traceback.print_exc()
+        traceback.print_exc()
         print('The URL you requested could not be found.')
         return 'Html'
 
 def content_type(HTML):
     html = HTML
-    TypeNamere_exp = r'"__typename": "(GraphImage|GraphSidecar|GraphVideo)"'
+    TypeNamere_exp = r'"__typename":"(GraphImage|GraphSidecar|GraphVideo)"'
     TypeNamere = re.compile(TypeNamere_exp)
     TypeNametags = re.findall(TypeNamere, html)
     # print(TypeNametags)
@@ -70,10 +90,10 @@ def content_type(HTML):
 
 def findVideoUrl(HTML):
     html = HTML
-    videore_raw = r'"video_url": "(https://.*?\.com/t50\.2886-16/\d*_\d*_\d*_n\.mp4)",'
+    videore_raw = r'"video_url":"(https://.*?\.com)"'
     videore = re.compile(videore_raw)
     videotag = re.findall(videore, html)
-    # print(videotag)
+    print(videotag)
     videonum = len(videotag)
     if videonum == 1:
         videoUrl = videotag
@@ -90,7 +110,7 @@ def findVideoUrl(HTML):
 
 def findImageUrl_Single(HTML):
     html = HTML
-    displayre = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
+    displayre = r'"display_url":"(https://.*?\.com?)"'
     imgurltagre = re.compile(displayre)
     imageurltag = re.findall(imgurltagre, html)
     # print(displayre,imageurltag)
@@ -105,7 +125,7 @@ def findImageUrl_Single(HTML):
 
 def findImageUrl_Set(HTML):
     html = HTML
-    displayre = r'"display_url": "(https://.*?\.com/t51\.2885-15/.*?e35/\d*_\d*_\d*_n\.jpg)'
+    displayre = r'"display_url":"(https://.*?\.com?)"'
     imgurllistre = re.compile(displayre)
     imageurllists = re.findall(imgurllistre, html)
 
@@ -158,9 +178,15 @@ def DownloadImage_Single(imageurl, postname):
         target = path + '%s.jpg' % ImgName
         print("Downloading %s \n" % target)
         try:
-            urllib.request.urlretrieve(ImgUrl, target, progress_report)
+            # urllib.request.urlretrieve(ImgUrl, target, progress_report)
+            f=open(target,'wb')
+            picture=get_text(ImgUrl,True)
+            f.write(picture)
+            f.close()
+
         except:
             print("The image seems could not be downloaded...")
+            traceback.print_exc()
 
 def DownloadImage_set(imageurllist, postname):
     ImageUrlList = imageurllist
@@ -290,3 +316,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #https://www.instagram.com/p/B02aW4JgGsQ/?igshid=o3i5uv9eqymm
