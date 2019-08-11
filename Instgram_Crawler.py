@@ -22,17 +22,17 @@ Type_Mixed = [Video, Image_set]
 # with open('proxies.json','r') as f:           #将代理读取进列表
 #     proxy_pool = f.readlines()
 # proxies=json.loads(random.choice(proxy_pool))    #随机选取一个代理
-proxies = ""
-headers={'Referer':'https://www.instagram.com/',"User-Agent":"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"}
+# proxies = ""
+# headers={'Referer':'https://www.instagram.com/',"User-Agent":"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"}
 
-def get_text(url,cont = False,proxies=proxies):            #获取网页的text或者content
-    r = requests.get(url,headers=headers,proxies=proxies)
-    r.encoding = 'utf-8'
-    if cont == True:
-        h = r.content
-    else:
-        h = r.text
-    return h
+# def get_text(url,cont = False,proxies=proxies):            #获取网页的text或者content
+#     r = requests.get(url,headers=headers,proxies=proxies)
+#     r.encoding = 'utf-8'
+#     if cont == True:
+#         h = r.content
+#     else:
+#         h = r.text
+#     return h
 
 
 def getHtml(url):
@@ -110,7 +110,7 @@ def findVideoUrl(HTML):
 
 def findImageUrl_Single(HTML):
     html = HTML
-    displayre = r'"display_url":"(https://.*?\.com?)"'
+    displayre = r'"display_url":"(https://.*?)","display_resources"?'
     imgurltagre = re.compile(displayre)
     imageurltag = re.findall(imgurltagre, html)
     # print(displayre,imageurltag)
@@ -125,7 +125,7 @@ def findImageUrl_Single(HTML):
 
 def findImageUrl_Set(HTML):
     html = HTML
-    displayre = r'"display_url":"(https://.*?\.com?)"'
+    displayre = r'"display_url":"(https://.*?)","display_resources"?'
     imgurllistre = re.compile(displayre)
     imageurllists = re.findall(imgurllistre, html)
 
@@ -178,11 +178,11 @@ def DownloadImage_Single(imageurl, postname):
         target = path + '%s.jpg' % ImgName
         print("Downloading %s \n" % target)
         try:
-            # urllib.request.urlretrieve(ImgUrl, target, progress_report)
-            f=open(target,'wb')
-            picture=get_text(ImgUrl,True)
-            f.write(picture)
-            f.close()
+            urllib.request.urlretrieve(ImgUrl, target, progress_report)
+            # f=open(target,'wb')
+            # picture=get_text(ImgUrl,True)
+            # f.write(picture)
+            # f.close()
 
         except:
             print("The image seems could not be downloaded...")
@@ -316,4 +316,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #https://www.instagram.com/p/B02aW4JgGsQ/?igshid=o3i5uv9eqymm
